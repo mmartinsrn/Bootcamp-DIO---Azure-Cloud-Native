@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <h1 class="mb-4">Mini Blog</h1>
+
+    <!-- Formulário de Novo Post -->
+    <form id="postForm">
+      <div class="mb-3">
+        <label for="title" class="form-label">Título</label>
+        <input type="text" class="form-control" id="title" required>
+      </div>
+      <div class="mb-3">
+        <label for="content" class="form-label">Conteúdo</label>
+        <textarea class="form-control" id="content" rows="5" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-success">Salvar Post</button>
+    </form>
+
+    <hr class="my-5">
+
+    <!-- Lista de Posts -->
+    <h2>Posts</h2>
+    <div id="postList" class="list-group mb-5">
+      <!-- Lista dinâmica -->
+    </div>
+
+    <!-- Exibição do Post Selecionado -->
+    <div id="postView" style="display: none;">
+      <a href="#" class="btn btn-secondary mb-4" onclick="voltar()">← Voltar</a>
+      <div id="postContent" class="mb-5"></div>
+
+      <h3>Comentários</h3>
+      <div id="comments" class="list-group mb-4"></div>
+
+      <form id="commentForm" class="mb-3">
+        <label for="comment" class="form-label">Adicionar Comentário</label>
+        <textarea class="form-control" id="comment" rows="3" required></textarea>
+        <button type="submit" class="btn btn-success mt-2">Enviar Comentário</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Utilitários
+    function getPosts() {
+      const posts = localStorage.getItem('posts');
+      return posts ? JSON.parse(posts) : [];
+    }
+
+    function savePosts(posts) {
+      localStorage.setItem('posts', JSON.stringify(posts));
+    }
+
+    function getComments() {
+      const comments = localStorage.getItem('comments');
+      return comments ? JSON.parse(comments) : [];
+    }
+
+    function saveComments(comments) {
+      localStorage.setItem('comments', JSON.stringify(comments));
+    }
+
+    function voltar() {
+      document.getElementById('postForm').style.display = 'block';
+      document.getElementById('postList').style.display = 'block';
+      document.getElementById('postView').style.display = 'none';
+      document.getElementById('postContent').innerHTML = '';
+      document.getElementById('comments').innerHTML = '';
+    }
+
+    // Eventos
+    document.getElementById('postForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const posts = getPosts();
+
+      const newPost = {
+        id: Date.now(),
+        title,
+        content
+      };
+
+      posts.push(newPost);
+      savePosts(posts);
+
+      document.getElementById('title').value = '';
+      document.getElementById('content').value = '';
+      renderPostList();
+    });
+
+    document.getElementById('commentForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const commentText = document.getElementById('comment').value;
+      const comments = getComments();
+      const postId = Number(document.getElementById('commentForm').dataset.postId);
+
+      const newComment = {
+        id: Date.now(),
+        postId,
+        text: commentText
+      };
+
+      comments.push(newComment);
+      saveComments(comments);
+
+      document.getElementById('comment').value = '';
+      renderComments(postId);
+    });
+
+    // Renderizações
+    function renderPostList() {
+      const postList = document.getElementById('postList');
+      const posts = getPosts();
+
+      postList.innerHTML = '';
+      posts.forEach(post => {
+        const item = document.createElement('a');
+        item.href = "#";
+        item.className = "list-group-item list-group-item-action";
+        item.textContent = post.title;
+        item.addEventListener('click', () => renderPost(post.id));
+        postList.appendChild(item);
+      });
+    }
+
+    function renderPost(postId) {
+      const posts = getPosts();
+      const post = posts.find(p => p.id === postId);
+      const container = document.getElementById('postContent');
+
+      if (post) {
+        container.innerHTML = `<h1>${post.title}</h1><p>${post.content}</p>`;
+        document.getElementById('postForm').style.display = 'none';
+        document.getElementById('postList').style.display = 'none';
+        document.getElementById('postView').style.display = 'block';
+        document.getElementById('commentForm').dataset.postId = post.id;
+        renderComments(post.id);
+      } else {
+        container.innerHTML = `<p class="text-danger">Post não encontrado.</p>`;
+      }
+    }
+
+    function renderComments(postId) {
+      const comments = getComments().filter(c => c.postId === postId);
+      const container = document.getElementById('comments');
+      container.innerHTML = '';
+
+      if (comments.length === 0) {
+        container.innerHTML = `<p class="text-muted">Nenhum comentário ainda.</p>`;
+      } else {
+        comments.forEach(comment => {
+          const div = document.createElement('div');
+          div.className = 'list-group-item';
+          div.textContent = comment.text;
+          container.appendChild(div);
+        });
+      }
+    }
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function () {
+      renderPost();
+      renderComments();
+    });
+  </script>
+
+  <!-- Bootstrap Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
